@@ -147,6 +147,9 @@ with gr.Blocks(theme=THEME, css=CSS, title="AUTOLYRICS") as demo:
             ["examples/rap_clip.wav",   5, "Both (compare)"],
         ],
         inputs=[audio, beams, choice],
+        outputs=[base_out, ft_out, base_meta, ft_meta, meta],
+        fn=run,
+        cache_examples=False,
     )
 
     run_btn.click(
@@ -155,5 +158,4 @@ with gr.Blocks(theme=THEME, css=CSS, title="AUTOLYRICS") as demo:
         outputs=[base_out, ft_out, base_meta, ft_meta, meta],
     )
 
-if __name__ == "__main__":
-    demo.queue(max_size=12).launch()
+demo.queue(max_size=12).launch()
