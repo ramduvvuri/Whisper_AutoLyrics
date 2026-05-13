@@ -1,4 +1,17 @@
 """AUTOLYRICS — side-by-side baseline vs fine-tuned Gradio demo."""
+# ── Defensive patch: guard against bool schemas in gradio_client.utils.get_type ────────────
+# Fixes: TypeError: argument of type 'bool' is not iterable
+# Root cause: pydantic ≥ 2.11 emits {"additionalProperties": true} (bool, not dict)
+# which gradio_client 1.4.x passes raw into get_type, crashing API schema generation.
+import gradio_client.utils as _gcu
+_orig_get_type = _gcu.get_type
+def _safe_get_type(schema):
+    if not isinstance(schema, dict):
+        return "any"
+    return _orig_get_type(schema)
+_gcu.get_type = _safe_get_type
+del _orig_get_type, _safe_get_type, _gcu
+# ────────────────────────────────────────────────────────────────────────────────────────────
 import os
 import time
 import torch
@@ -158,4 +171,8 @@ with gr.Blocks(theme=THEME, css=CSS, title="AUTOLYRICS") as demo:
         outputs=[base_out, ft_out, base_meta, ft_meta, meta],
     )
 
-demo.queue(max_size=12).launch()
+demo.queue(max_size=12).launch(
+    server_name="0.0.0.0",   # Required: HF Spaces proxy expects this binding
+    server_port=7860,         # HF Spaces standard port
+    show_error=True,          # Surface tracebacks in the UI during debugging
+)

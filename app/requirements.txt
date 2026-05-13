@@ -1,9 +1,19 @@
-torch==2.7.0
-torchaudio==2.7.0
-transformers==4.46.3
+# ── Core ML stack ──────────────────────────────────────────────────────────
+# Remove +cpu suffix if the Space is always guaranteed a T4 GPU
+torch==2.3.1
+torchaudio==2.3.1
+transformers==4.47.1        # first release stable on Python 3.13; full Whisper support
 peft==0.13.2
+accelerate==0.34.2          # compatible with transformers 4.47.x
+
+# ── Gradio stack ───────────────────────────────────────────────────────────
 gradio==5.6.0
-huggingface_hub==0.25.2
+pydantic==2.10.6            # CRITICAL: pins below pydantic 2.11 which breaks gradio_client 1.4.x
+                            # (gradio_client get_type: "if const in schema" crashes on bool)
+
+# ── HuggingFace ────────────────────────────────────────────────────────────
+huggingface_hub==0.26.3     # minimum required by peft 0.13.2 (0.25.2 is too old)
+
+# ── Audio ──────────────────────────────────────────────────────────────────
 soundfile==0.12.1
-accelerate==1.1.1
 sentencepiece==0.2.0
