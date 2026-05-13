@@ -1,0 +1,9 @@
+torch
+torchaudio
+transformers
+peft
+gradio
+huggingface_hub
+soundfile
+accelerate
+sentencepiece

@@ -1,0 +1,83 @@
+# ── Virtual Environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Python Artifacts ──────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+MANIFEST
+
+# ── Environment & Secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+*.env
+secrets.yaml
+secrets.json
+
+# ── Data & Audio ──────────────────────────────────────────────────────────────
+data/
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+
+# ── Model Outputs & Checkpoints ───────────────────────────────────────────────
+outputs/
+checkpoints/
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+wandb/
+
+# ── Jupyter Notebooks ─────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── Reports (generated artifacts) ────────────────────────────────────────────
+reports/*.pdf
+reports/*.html
+
+# ── HuggingFace Space clone ───────────────────────────────────────────────────
+_space/
+
+# ── OS Files ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE & Editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln.docstates
+*.swp
+*.swo
+*~
+
+# ── Testing & Coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── MyPy / Type Checking ──────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ── Ruff / Linter Cache ───────────────────────────────────────────────────────
+.ruff_cache/
