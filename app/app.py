@@ -25,17 +25,19 @@ processor = WhisperProcessor.from_pretrained(BASE_MODEL)
 
 baseline_model = WhisperForConditionalGeneration.from_pretrained(
     BASE_MODEL, torch_dtype=DTYPE).to(DEVICE).eval()
-for m in (baseline_model.config, baseline_model.generation_config):
-    m.language = "de"; m.task = "transcribe"
-    m.forced_decoder_ids = None; m.suppress_tokens = []
+# Configure generation_config only (not model.config) — avoids reconciliation
+# warnings in transformers 4.47+ when both configs hold conflicting values.
+baseline_model.generation_config.language = "de"
+baseline_model.generation_config.task = "transcribe"
+baseline_model.generation_config.forced_decoder_ids = None
 baseline_model.generation_config.no_repeat_ngram_size = 3
 
 base_for_ft = WhisperForConditionalGeneration.from_pretrained(
     BASE_MODEL, torch_dtype=DTYPE)
 ft_model = PeftModel.from_pretrained(base_for_ft, ADAPTER_REPO).to(DEVICE).eval()
-for m in (ft_model.config, ft_model.generation_config):
-    m.language = "de"; m.task = "transcribe"
-    m.forced_decoder_ids = None; m.suppress_tokens = []
+ft_model.generation_config.language = "de"
+ft_model.generation_config.task = "transcribe"
+ft_model.generation_config.forced_decoder_ids = None
 ft_model.generation_config.no_repeat_ngram_size = 3
 print("Models ready.")
 
@@ -135,11 +137,25 @@ def transcribe_with(model, audio_tensor, num_beams: int):
     feats = processor(audio_tensor.numpy(), sampling_rate=16000,
                       return_tensors="pt").input_features.to(DEVICE, dtype=DTYPE)
     t0 = time.perf_counter()
-    ids = model.generate(feats, num_beams=num_beams, max_new_tokens=225,
-                         return_dict_in_generate=True, output_scores=True)
+    # ── KEY FIX: pass input_features as a KEYWORD argument. ────────────────
+    # PeftModelForSeq2SeqLM.generate() only accepts **kwargs (no positional
+    # args beyond self). Passing `feats` positionally raises:
+    #   TypeError: generate() takes 1 positional argument but 2 were given
+    # WhisperForConditionalGeneration also accepts it as a keyword, so this
+    # call is correct for BOTH the bare baseline model and the PEFT wrapper.
+    ids = model.generate(
+        input_features=feats,
+        num_beams=num_beams,
+        max_new_tokens=225,
+        return_dict_in_generate=True,
+        output_scores=True,
+    )
     dt = time.perf_counter() - t0
+    # ids is GenerateBeamEncoderDecoderOutput when return_dict_in_generate=True.
+    # .sequences holds the token-id tensor; decode it to text.
     text = processor.batch_decode(ids.sequences, skip_special_tokens=True)[0].strip()
-    # crude confidence: mean negative log-likelihood normalized
+    # Confidence proxy: exponentiate the beam score (sum of log-probs).
+    # sequences_scores is None for greedy/num_beams=1 — guard accordingly.
     if hasattr(ids, "sequences_scores") and ids.sequences_scores is not None:
         conf = float(torch.exp(ids.sequences_scores[0]).clamp(0, 1))
     else:
