@@ -1,6 +1,11 @@
 """AUTOLYRICS — side-by-side baseline vs fine-tuned Gradio demo."""
 import os
 import time
+import subprocess
+import tempfile
+import wave
+from pathlib import Path
+import numpy as np
 import torch
 import torchaudio
 import gradio as gr
@@ -36,12 +41,93 @@ print("Models ready.")
 
 
 def load_audio(path: str) -> torch.Tensor:
-    wav, sr = torchaudio.load(path)
-    if wav.shape[0] > 1:
-        wav = wav.mean(0, keepdim=True)
-    if sr != 16000:
-        wav = torchaudio.functional.resample(wav, sr, 16000)
-    return wav.squeeze(0)
+    """Load any browser-uploaded audio format → 16 kHz mono float32 tensor.
+
+    Strategy (two-stage, zero libsndfile dependency):
+      1. ffmpeg transcodes ANY browser format (webm/opus, ogg, mp3, m4a, wav)
+         into a clean 16-bit PCM WAV at 16 kHz mono.  ffmpeg handles every
+         container/codec that browsers produce, including Gradio mic recordings.
+      2. Python's built-in `wave` module reads the raw PCM bytes directly.
+         This **completely bypasses soundfile / libsndfile**, which cannot decode
+         webm, ogg/opus, or partially-encoded containers and raises
+         ``soundfile.LibsndfileError: Format not recognised`` on HF Spaces.
+
+    ffmpeg is pre-installed on HF Spaces via packages.txt — no extra Python
+    package is needed.  `wave` and `numpy` are always available.
+
+    Returns
+    -------
+    torch.Tensor
+        1-D float32 waveform on CPU, normalised to [-1, 1], at 16 000 Hz.
+    """
+    src = Path(path)
+    if not src.exists() or src.stat().st_size == 0:
+        raise ValueError(f"Audio file missing or empty: {path}")
+
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        # ── Step 1: transcode to clean PCM WAV via ffmpeg ──────────────────
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y",         # overwrite without prompting
+                "-i", str(src),         # any browser-upload format
+                "-ac", "1",            # force mono
+                "-ar", "16000",        # resample to 16 kHz
+                "-sample_fmt", "s16",  # 16-bit signed PCM
+                "-f", "wav",           # output container: wav
+                tmp_path,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            timeout=60,
+        )
+        if result.returncode != 0:
+            err = result.stderr.decode(errors="replace").strip().splitlines()
+            raise RuntimeError(
+                f"ffmpeg failed (code {result.returncode}): "
+                f"{err[-1] if err else 'unknown error'}"
+            )
+
+        # ── Step 2: read PCM bytes with stdlib `wave` — no soundfile ───────
+        with wave.open(tmp_path, "rb") as wf:
+            n_channels = wf.getnchannels()
+            sampwidth  = wf.getsampwidth()  # bytes per sample: 2 for s16
+            framerate  = wf.getframerate()
+            n_frames   = wf.getnframes()
+            if n_frames == 0:
+                raise ValueError("ffmpeg produced an empty audio file.")
+            raw = wf.readframes(n_frames)
+
+        # Parse raw bytes → float32 in [-1, 1]
+        # ffmpeg guarantees s16, but use sampwidth defensively.
+        if sampwidth == 2:
+            arr = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+        elif sampwidth == 4:
+            arr = np.frombuffer(raw, dtype=np.int32).astype(np.float32) / 2147483648.0
+        else:
+            arr = np.frombuffer(raw, dtype=np.uint8).astype(np.float32) / 128.0 - 1.0
+
+        # Mix down multi-channel (guard: -ac 1 already handles this)
+        if n_channels > 1:
+            arr = arr.reshape(-1, n_channels).mean(axis=1)
+
+        wav = torch.from_numpy(arr.copy())  # copy() avoids non-writable buffer warning
+
+        # Resample if framerate drifted (guard: -ar 16000 already handles this)
+        if framerate != 16000:
+            wav = torchaudio.functional.resample(
+                wav.unsqueeze(0), framerate, 16000
+            ).squeeze(0)
+
+        return wav  # 1-D float32 CPU tensor
+
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 @torch.inference_mode()
@@ -64,7 +150,20 @@ def transcribe_with(model, audio_tensor, num_beams: int):
 def run(audio_path: str, num_beams: int, model_choice: str):
     if audio_path is None:
         return "—", "—", "—", "—", "Please upload audio."
-    audio = load_audio(audio_path)
+
+    # Load and decode audio — raises ValueError/RuntimeError on bad input.
+    try:
+        audio = load_audio(audio_path)
+    except (ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+        err_msg = f"⚠️ Audio error: {exc}"
+        return err_msg, err_msg, "—", "—", "Audio could not be decoded — try a different file."
+    except Exception as exc:  # noqa: BLE001
+        err_msg = f"⚠️ Unexpected error loading audio: {exc}"
+        return err_msg, err_msg, "—", "—", "Audio could not be decoded — try a different file."
+
+    if audio.numel() == 0:
+        return "—", "—", "—", "—", "⚠️ Audio file appears to be empty or silent."
+
     duration = audio.shape[-1] / 16000
 
     if model_choice == "Baseline only":
