@@ -1,3 +1,4 @@
+# Author: ramduvvuri
 # File: alignment.py
 """Generate timestamp-based word alignments from audio using Whisper.
 

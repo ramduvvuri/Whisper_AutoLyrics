@@ -1,3 +1,4 @@
+# Author: ramduvvuri
 # File: manifest.py
 """Build train/val/test CSVs from preprocessed clips."""
 from pathlib import Path

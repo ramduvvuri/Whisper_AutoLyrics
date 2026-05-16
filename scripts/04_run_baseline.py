@@ -1,3 +1,4 @@
+# Author: ramduvvuri
 # File: 04_run_baseline.py
 """Run baseline Whisper-small on the test split, dump predictions, compute WER/CER."""
 from pathlib import Path

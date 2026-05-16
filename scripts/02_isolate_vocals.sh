@@ -1,3 +1,4 @@
+# Author: ramduvvuri
 # File: 02_isolate_vocals.sh
 #!/usr/bin/env bash
 set -euo pipefail

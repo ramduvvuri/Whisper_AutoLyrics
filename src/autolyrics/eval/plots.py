@@ -1,3 +1,4 @@
+# Author: ramduvvuri
 # File: plots.py
 """Two plots that go in the report and the website."""
 from pathlib import Path

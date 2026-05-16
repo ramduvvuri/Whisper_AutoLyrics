@@ -1,3 +1,4 @@
+# Author: ramduvvuri
 # File: compare.py
 """End-to-end eval: baseline vs fine-tuned, full breakdown."""
 from __future__ import annotations
