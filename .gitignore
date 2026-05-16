@@ -25,7 +25,10 @@ secrets.yaml
 secrets.json
 
 # ── Data & Audio ──────────────────────────────────────────────────────────────
-data/
+# Ignore everything inside data EXCEPT python and shell scripts
+data/*
+!data/*.py
+!data/*.sh
 *.wav
 *.mp3
 *.flac
@@ -51,7 +54,8 @@ reports/*.pdf
 reports/*.html
 
 # ── HuggingFace Space clone ───────────────────────────────────────────────────
-_space/
+# Do not ignore _space/ entirely, just the specific artifacts if needed. Person B needs to push code here.
+# _space/
 
 # ── OS Files ──────────────────────────────────────────────────────────────────
 .DS_Store
