@@ -198,7 +198,6 @@ def run(audio_path: str, num_beams: int, model_choice: str):
            f"{f_dt:.2f}s · RTF {f_dt/duration:.2f}", \
            f"Audio: {duration:.1f}s"
 
-
 # ---------- UI ----------
 THEME = gr.themes.Monochrome(
     primary_hue="neutral", neutral_hue="slate",
