@@ -1,0 +1,10 @@
+{
+  "total_clips": 141,
+  "total_hours": 0.8993222222222222,
+  "splits": {
+    "train": 113,
+    "val": 15,
+    "test": 13
+  },
+  "sources": 19
+}
