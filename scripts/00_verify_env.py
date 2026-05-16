@@ -1,3 +1,4 @@
+# File: 00_verify_env.py
 """Run this first. If any check fails, fix before proceeding."""
 import sys
 import importlib

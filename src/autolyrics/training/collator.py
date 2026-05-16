@@ -1,3 +1,4 @@
+# File: collator.py
 """Data collator for Whisper seq2seq with padding + label -100 trick."""
 from dataclasses import dataclass
 from typing import Any

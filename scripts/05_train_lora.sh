@@ -1,3 +1,4 @@
+# File: 05_train_lora.sh
 #!/bin/bash
 set -e
 echo "Training LoRA adapter..."

@@ -1,3 +1,4 @@
+# File: train.py
 """LoRA fine-tuning of Whisper for singing transcription."""
 from __future__ import annotations
 from pathlib import Path

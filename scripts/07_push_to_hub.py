@@ -1,3 +1,4 @@
+# File: 07_push_to_hub.py
 """Upload LoRA adapter + processor to HF Hub with a real model card."""
 from pathlib import Path
 import argparse

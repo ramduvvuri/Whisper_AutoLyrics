@@ -1,3 +1,4 @@
+# File: dataset.py
 """HF Dataset wrapper that maps audio_path/text → input_features/labels."""
 from datasets import Dataset, Audio
 import pandas as pd

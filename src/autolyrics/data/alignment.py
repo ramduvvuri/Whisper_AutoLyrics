@@ -1,3 +1,4 @@
+# File: alignment.py
 """Generate timestamp-based word alignments from audio using Whisper.
 
 Returns phrase-level segments (start_sec, end_sec, text) suitable for
