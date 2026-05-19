@@ -1,0 +1,12 @@
+defaults:
+  - base
+
+model_name: openai/whisper-small
+lora_r: 8
+lora_alpha: 16
+lora_dropout: 0.1
+learning_rate: 1.0e-4
+batch_size: 8
+num_epochs: 10
+warmup_steps: 500
+output_dir: outputs/checkpoints

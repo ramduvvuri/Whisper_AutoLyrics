@@ -1,0 +1,5 @@
+defaults:
+  - base
+
+model_path: outputs/checkpoints/best
+test_manifest: data/manifests/test.csv
